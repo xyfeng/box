@@ -37,9 +37,9 @@ function cube(size) {
 function setLinesVisible( object, array ){
   for(var i=0; i<object.children.length; i++){
     object.children[i].material = new THREE.LineDashedMaterial({
-      color: 0xffffff,
+      color: 0x999999,
       linewidth: 1,
-      dashSize: 6,
+      dashSize: 4,
       gapSize: 2
     });
   }
@@ -47,9 +47,41 @@ function setLinesVisible( object, array ){
     var index = array[i];
     object.children[index].material = new THREE.LineBasicMaterial({
       color: 0xffffff,
-      linewidth: 4
+      linewidth: 2
     });
   }
+}
+
+function getAllCombinations(input){
+  var results = [], result, mask, total = Math.pow(2, input.length);
+  for(mask = 0; mask < total; mask++){
+    result = [];
+    i = input.length - 1;
+    do{
+      if( (mask & (1 << i)) !== 0){
+        result.push(input[i]);
+      }
+    }while(i--);
+    results.push(result.reverse());
+  }
+  return results;
+}
+
+function combine(input, size){
+  var results = [], result, mask, total = Math.pow(2, input.length);
+  for(mask = 0; mask < total; mask++){
+    result = [];
+    i = input.length - 1;
+    do{
+      if( (mask & (1 << i)) !== 0){
+        result.push(input[i]);
+      }
+    }while(i--);
+    if( result.length == size){
+      results.push(result.reverse());
+    }
+  }
+  return results;
 }
 
 if ( ! Detector.webgl ) {
@@ -76,14 +108,18 @@ function init(){
   });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
+  document.body.onkeypress = keyEvent;
 
-  for( var i=0; i<12; i++ ){
-    var one = cube(80);
-    var x = i % 4;
-    var y = Math.floor(i / 4);
-    one.position.x = (x - 1.5) * 200;
-    one.position.y = (y - 1) * 200;
-    setLinesVisible( one, [i] );
+  var sets = combine([0,1,2,3,4,5,6,7,8,9,10,11], 3);
+  var cols = 10;
+  var rows = Math.ceil(sets.length / cols);
+  for( var i=0; i<sets.length; i++ ){
+    var one = cube(40);
+    var x = i % cols;
+    var y = Math.floor(i / cols);
+    one.position.x = (x - (cols-1)/2) * 100;
+    one.position.y = ((rows-1)/2 - y) * 100;
+    setLinesVisible( one, sets[i] );
     objects.push(one);
     scene.add(one);
   }
@@ -95,13 +131,24 @@ function animate() {
   stats.update();
 }
 
+var time = 0, animationStop = false;
 function render() {
-  var time = Date.now() * 0.01;
   for(var i = 0; i < objects.length; i ++) {
     var object = objects[ i ];
-    object.rotation.y = 0.1 * time;
+    // object.rotation.y = Math.PI / 4;
+    object.rotation.y = time;
+  }
+  if(!animationStop){
+    time = time + 0.015;
   }
   renderer.render(scene, camera);
+}
+
+function keyEvent(event) {
+  var key = event.keyCode || event.which;
+  if (key == 32) {
+    animationStop = !animationStop;
+  }
 }
 
 init();
